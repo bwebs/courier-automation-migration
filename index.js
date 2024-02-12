@@ -54,7 +54,7 @@ const updateAutomation = async (locale, nodes, template) => {
     };
 };
 
-const test = async () => {
+const main = async () => {
     automation_ids.forEach(async (automation_id) => {
         const { template, nodes } = await getAutomation('us', automation_id);
         const saved = await updateAutomation('eu', nodes, template);
@@ -86,4 +86,4 @@ const checkJWTExpiration = (locale) => {
 checkJWTExpiration('us');
 checkJWTExpiration('eu');
 
-test();
+main();
