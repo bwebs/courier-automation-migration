@@ -22,7 +22,6 @@ export const getHeaders = (locale) => {
         'accept-language': 'en-US,en;q=0.9',
         authorization: authorizations[locale],
         connection: 'keep-alive',
-        'content-length': '296',
         host: domains[locale],
         origin: `https://${domains[locale]}`,
         referer: `https://${domains[locale]}/`,

@@ -10,9 +10,23 @@ export const authorizations = {
     us: process.env.US_AUTHORIZATION,
     eu: process.env.EU_AUTHORIZATION,
 };
-export const endpoint = {
-    us: `https://${domains.us}/studio/q?tenantId=${tenant_id}`,
-    eu: `https://${domains.eu}/studio/q?tenantId=${tenant_id}`,
-};
+export const graphqlEndpoint = (environment) => ({
+    us: `https://${domains.us}/studio/q?tenantId=${tenant_id}${
+        environment === 'test' ? '&env=test' : ''
+    }`,
+    eu: `https://${domains.eu}/studio/q?tenantId=${tenant_id}${
+        environment === 'test' ? '&env=test' : ''
+    }`,
+});
 
-export const automation_ids = ['909486cb-ad92-4420-ba8f-22413b6b4f2a'];
+export const getRestEndpoint = (environment, path, query = {}) => {
+    const params = new URLSearchParams({ ...query, tenantId: tenant_id });
+    return {
+        us: `https://api.courier.com/studio${
+            environment === 'test' ? '/test' : ''
+        }${path}?${params.toString()}`,
+        eu: `https://api.eu.courier.com/studio${
+            environment === 'test' ? '/test' : ''
+        }${path}?${params.toString()}`,
+    };
+};
