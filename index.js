@@ -35,24 +35,29 @@ const getAutomation = async (environment, locale, template_id) => {
     };
 };
 
+const updateVariables = (content) => {
+  return content.replace(
+            /api\.courier\.com/,
+            'api.eu.courier.com'
+        );
+}
+
 const updateAutomation = async (environment, locale, nodes, template) => {
     const headers = getHeaders(locale);
     const body_nodes = saveAutomationV2GraphQL(nodes, template);
     const body_template = saveAutomationV2TemplateQl(nodes, template);
+    // console.log('body_nodes', body_nodes.variables);
     const response_nodes = await fetch(graphqlEndpoint(environment)[locale], {
         method: 'POST',
         headers,
-        body: JSON.stringify(body_nodes).replace(
-            'api.courier.com',
-            'api.eu.courier.com'
-        ),
+        body: updateVariables(JSON.stringify(body_nodes))
     });
     const response_template = await fetch(
         graphqlEndpoint(environment)[locale],
         {
             method: 'POST',
             headers,
-            body: JSON.stringify(body_template),
+            body: updateVariables(JSON.stringify(body_template))
         }
     );
     return {
