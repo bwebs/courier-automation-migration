@@ -134,4 +134,4 @@ const checkJWTExpiration = (locale) => {
 checkJWTExpiration("us");
 checkJWTExpiration("eu");
 
-syncAutomations("test");
+syncAutomations(process.argv.first || "test");
