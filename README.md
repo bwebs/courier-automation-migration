@@ -2,6 +2,10 @@
 
 `🇺🇸 => 🇪🇺`
 
+A script to copy the latest published automations US instance of Courier to the EU instance of Courier and mutate automation content as needed.
+
+Run every time an automation is changed in US.
+
 ## Setup
 
 Make sure you have `node` installed and run `yarn`.
