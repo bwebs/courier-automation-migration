@@ -18,6 +18,8 @@ const AUTOMATION_ID_SAFELIST = [
   '9c628c07-cd0e-429e-97b7-b271829e39b0'  // Care Spark Kindle Drip Campaign Exit
 ]
 
+const DISABLED_EVENT_PREFIX = 'NOT_AVAILABLE ';
+
 const getAutomation = async (environment, locale, template_id) => {
   const headers = getHeaders(locale);
   const body_template = getAutomationTemplateGraphQL(template_id);
@@ -49,11 +51,29 @@ const updateVariables = (content) => {
                 .replace(/topic-rex-lb-1225292210\.us-west-2\.elb\.amazonaws\.com/, "topic-rex-lb-1225292210.us-west-2.elb.amazonaws.com");
 };
 
-const updateAutomation = async (environment, locale, nodes, template) => {
+const updateAutomation = async (environment, locale, nodes, template, disable=false) => {
   const headers = getHeaders(locale);
   const body_nodes = saveAutomationV2GraphQL(nodes, template);
   const body_template = saveAutomationV2TemplateQl(nodes, template);
-  // console.log('body_nodes', body_nodes.variables);
+
+  if (disable) {
+    body_nodes.variables.nodes.forEach(node => {
+      if (node.type == 'trigger' && node.trigger_type == 'segment') {
+        const event_id = node.event_id?.replace(DISABLED_EVENT_PREFIX, '') || '';
+        node.event_id = [DISABLED_EVENT_PREFIX, event_id].join('');
+      }
+    });
+    body_template.variables.nodes.forEach(node => {
+      if (node.type == 'trigger' && node.trigger_type == 'segment') {
+        const event_id = node.event_id.replace(DISABLED_EVENT_PREFIX, '');
+        node.event_id = [DISABLED_EVENT_PREFIX, event_id].join('');
+      }
+    });
+  }
+
+  // console.log("body_nodes", body_nodes.variables);
+  // console.log("body_template", body_template.variables);
+
   const response_nodes = await fetch(graphqlEndpoint(environment)[locale], {
     method: "POST",
     headers,
@@ -102,15 +122,11 @@ const syncAutomations = async (environment) => {
     }),
   });
   const automation_data = await automations.json();
-  let automation_ids = get(
+  const automation_ids = get(
     automation_data,
     ["data", "automationsV2", "templates", "templates"],
     [],
   );
-
-  automation_ids = automation_ids.filter((automation) => {
-    return AUTOMATION_ID_SAFELIST.includes(automation.id);
-  });
 
   for (let i = 0; i < automation_ids.length; i++) {
     const automation = automation_ids[i];
@@ -120,7 +136,8 @@ const syncAutomations = async (environment) => {
       "us",
       automation.id,
     );
-    const saved = await updateAutomation(environment, "eu", nodes, template);
+    const disable = !AUTOMATION_ID_SAFELIST.includes(automation.id);
+    const saved = await updateAutomation(environment, "eu", nodes, template, disable);
     console.log(
       `Saved - ${get(saved, [
         "template",
