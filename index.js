@@ -11,6 +11,13 @@ import {
 } from "./utils.js";
 import { authorizations, graphqlEndpoint } from "./variables.js";
 
+const AUTOMATION_ID_SAFELIST = [
+  '5a4f9964-7cfc-4ebc-8bc0-89e54b0a5d5a', // Spark Kindle Drip Campaign
+  '436c453f-ef7c-42b4-bba8-15cf3a5ed3ed', // Spark Kindle Drip Campaign Exit
+  '9ef909e9-def8-4c74-afd6-2cfc465bb7b5', // Care Spark Kindle Drip Campaign
+  '9c628c07-cd0e-429e-97b7-b271829e39b0'  // Care Spark Kindle Drip Campaign Exit
+]
+
 const getAutomation = async (environment, locale, template_id) => {
   const headers = getHeaders(locale);
   const body_template = getAutomationTemplateGraphQL(template_id);
@@ -92,11 +99,16 @@ const syncAutomations = async (environment) => {
     }),
   });
   const automation_data = await automations.json();
-  const automation_ids = get(
+  let automation_ids = get(
     automation_data,
     ["data", "automationsV2", "templates", "templates"],
     [],
   );
+
+  automation_ids = automation_ids.filter((automation) => {
+    return AUTOMATION_ID_SAFELIST.includes(automation.id);
+  });
+
   for (let i = 0; i < automation_ids.length; i++) {
     const automation = automation_ids[i];
 
