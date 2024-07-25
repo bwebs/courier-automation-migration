@@ -138,15 +138,21 @@ const syncAutomations = async (environment) => {
     );
     const disable = !AUTOMATION_ID_SAFELIST.includes(automation.id);
     const saved = await updateAutomation(environment, "eu", nodes, template, disable);
-    console.log(
-      `Saved - ${get(saved, [
+    const name = get(saved, [
         "template",
         "data",
         "automationsV2",
         "saveTemplate",
         "name",
-      ])} - (${automation.id})`,
-    );
+      ]);
+    
+    if (name) {
+      console.log(`Saved - ${name} - (${automation.id})`);
+    } else {
+      const nodeErrors = get(saved, ["nodes", "errors"]);
+      const templateErrors = get(saved, ["template", "errors"]);
+      console.log(`Failed - ${automation.id}`, JSON.stringify(nodeErrors), JSON.stringify(templateErrors));
+    }
   }
 };
 
