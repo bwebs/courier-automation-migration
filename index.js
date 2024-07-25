@@ -20,10 +20,10 @@ const AUTOMATION_ID_SAFELIST = [
 
 const DISABLED_EVENT_PREFIX = 'NOT_AVAILABLE ';
 
-const getAutomation = async (environment, locale, template_id) => {
+const getAutomation = async (environment, locale, template_id, version) => {
   const headers = getHeaders(locale);
-  const body_template = getAutomationTemplateGraphQL(template_id);
-  const body_nodes = getAutomationNodesGraphQL(template_id);
+  const body_template = getAutomationTemplateGraphQL(template_id, version);
+  const body_nodes = getAutomationNodesGraphQL(template_id, version);
 
   const response_graph = await fetch(graphqlEndpoint(environment)[locale], {
     method: "POST",
@@ -135,7 +135,9 @@ const syncAutomations = async (environment) => {
       environment,
       "us",
       automation.id,
+      'v0'
     );
+    
     const disable = !AUTOMATION_ID_SAFELIST.includes(automation.id);
     const saved = await updateAutomation(environment, "eu", nodes, template, disable);
     const name = get(saved, [
@@ -145,9 +147,16 @@ const syncAutomations = async (environment) => {
         "saveTemplate",
         "name",
       ]);
+    const version = get(saved, [
+        "template",
+        "data",
+        "automationsV2",
+        "saveTemplate",
+        "version",
+      ]);
     
     if (name) {
-      console.log(`Saved - ${name} - (${automation.id})`);
+      console.log(`Saved - ${name} - ${version} - (${automation.id})`);
     } else {
       const nodeErrors = get(saved, ["nodes", "errors"]);
       const templateErrors = get(saved, ["template", "errors"]);
@@ -172,4 +181,10 @@ const checkJWTExpiration = (locale) => {
 checkJWTExpiration("us");
 checkJWTExpiration("eu");
 
-syncAutomations(process.argv.slice(2)[0] || "test");
+const environment = process.argv.slice(2)[0] || "test";
+console.log('Syncing automations for environment:', environment);
+
+syncAutomations(environment);
+
+
+// getAutomation(environment, 'us', '5a4f9964-7cfc-4ebc-8bc0-89e54b0a5d5a', 'v0');
