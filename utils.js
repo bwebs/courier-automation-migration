@@ -4,6 +4,7 @@ export const getAutomationTemplateGraphQL = (template_id) => ({
   operationName: "GetAutomationsV2Template",
   variables: {
     templateId: template_id,
+    version: 'v0',
   },
   query:
     "query GetAutomationsV2Template($templateId: String!, $version: String) {\n  automationsV2 {\n    template(templateId: $templateId, version: $version)\n    __typename\n  }\n}\n",
@@ -13,6 +14,7 @@ export const getAutomationNodesGraphQL = (template_id) => ({
   operationName: "GetAutomationsV2Nodes",
   variables: {
     templateId: template_id,
+    version: 'v0',
   },
   query:
     "query GetAutomationsV2Nodes($templateId: String!, $version: String) {\n  automationsV2 {\n    nodes(templateId: $templateId, version: $version)\n    __typename\n  }\n}\n",
