@@ -154,13 +154,17 @@ const syncAutomations = async (environment) => {
         "saveTemplate",
         "version",
       ]);
+
+    console.log(''); // Add a newline for readability
     
     if (name) {
       console.log(`Saved - ${name} - ${version} - (${automation.id})`);
     } else {
       const nodeErrors = get(saved, ["nodes", "errors"]);
       const templateErrors = get(saved, ["template", "errors"]);
-      console.log(`Failed - ${automation.id}`, JSON.stringify(nodeErrors), JSON.stringify(templateErrors));
+      console.log(`Failed - ${automation.id} - ${automation.name}`);
+      console.log(JSON.stringify(nodeErrors));
+      console.log(JSON.stringify(templateErrors));
     }
   }
 };
