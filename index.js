@@ -11,10 +11,19 @@ import {
 } from "./utils.js";
 import { authorizations, graphqlEndpoint } from "./variables.js";
 
-const getAutomation = async (environment, locale, template_id) => {
+const AUTOMATION_ID_SAFELIST = [
+  '5a4f9964-7cfc-4ebc-8bc0-89e54b0a5d5a', // Spark Kindle Drip Campaign
+  '436c453f-ef7c-42b4-bba8-15cf3a5ed3ed', // Spark Kindle Drip Campaign Exit
+  '9ef909e9-def8-4c74-afd6-2cfc465bb7b5', // Care Spark Kindle Drip Campaign
+  '9c628c07-cd0e-429e-97b7-b271829e39b0'  // Care Spark Kindle Drip Campaign Exit
+]
+
+const DISABLED_EVENT_PREFIX = 'NOT_AVAILABLE ';
+
+const getAutomation = async (environment, locale, template_id, version) => {
   const headers = getHeaders(locale);
-  const body_template = getAutomationTemplateGraphQL(template_id);
-  const body_nodes = getAutomationNodesGraphQL(template_id);
+  const body_template = getAutomationTemplateGraphQL(template_id, version);
+  const body_nodes = getAutomationNodesGraphQL(template_id, version);
 
   const response_graph = await fetch(graphqlEndpoint(environment)[locale], {
     method: "POST",
@@ -36,14 +45,35 @@ const getAutomation = async (environment, locale, template_id) => {
 };
 
 const updateVariables = (content) => {
-  return content.replace(/api\.courier\.com/, "api.eu.courier.com");
+  return content.replace(/api\.courier\.com/, "api.eu.courier.com")
+                .replace(/app\.betterup\.co/, "app.betterup.eu")
+                .replace(/app\.staging\.betterup\.io/, "app.staging.eu.betterup.io")
+                .replace(/topic-rex-lb-1225292210\.us-west-2\.elb\.amazonaws\.com/, "topic-rex-lb-1225292210.us-west-2.elb.amazonaws.com");
 };
 
-const updateAutomation = async (environment, locale, nodes, template) => {
+const updateAutomation = async (environment, locale, nodes, template, disable=false) => {
   const headers = getHeaders(locale);
   const body_nodes = saveAutomationV2GraphQL(nodes, template);
   const body_template = saveAutomationV2TemplateQl(nodes, template);
-  // console.log('body_nodes', body_nodes.variables);
+
+  if (disable) {
+    body_nodes.variables.nodes.forEach(node => {
+      if (node.type == 'trigger' && node.trigger_type == 'segment') {
+        const event_id = node.event_id?.replace(DISABLED_EVENT_PREFIX, '') || '';
+        node.event_id = [DISABLED_EVENT_PREFIX, event_id].join('');
+      }
+    });
+    body_template.variables.nodes.forEach(node => {
+      if (node.type == 'trigger' && node.trigger_type == 'segment') {
+        const event_id = node.event_id.replace(DISABLED_EVENT_PREFIX, '');
+        node.event_id = [DISABLED_EVENT_PREFIX, event_id].join('');
+      }
+    });
+  }
+
+  // console.log("body_nodes", body_nodes.variables);
+  // console.log("body_template", body_template.variables);
+
   const response_nodes = await fetch(graphqlEndpoint(environment)[locale], {
     method: "POST",
     headers,
@@ -97,6 +127,7 @@ const syncAutomations = async (environment) => {
     ["data", "automationsV2", "templates", "templates"],
     [],
   );
+
   for (let i = 0; i < automation_ids.length; i++) {
     const automation = automation_ids[i];
 
@@ -104,17 +135,37 @@ const syncAutomations = async (environment) => {
       environment,
       "us",
       automation.id,
+      'v0'
     );
-    const saved = await updateAutomation(environment, "eu", nodes, template);
-    console.log(
-      `Saved - ${get(saved, [
+    
+    const disable = !AUTOMATION_ID_SAFELIST.includes(automation.id);
+    const saved = await updateAutomation(environment, "eu", nodes, template, disable);
+    const name = get(saved, [
         "template",
         "data",
         "automationsV2",
         "saveTemplate",
         "name",
-      ])} - (${automation.id})`,
-    );
+      ]);
+    const version = get(saved, [
+        "template",
+        "data",
+        "automationsV2",
+        "saveTemplate",
+        "version",
+      ]);
+
+    console.log(''); // Add a newline for readability
+    
+    if (name) {
+      console.log(`Saved - ${name} - ${version} - (${automation.id})`);
+    } else {
+      const nodeErrors = get(saved, ["nodes", "errors"]);
+      const templateErrors = get(saved, ["template", "errors"]);
+      console.log(`Failed - ${automation.id} - ${automation.name}`);
+      console.log(JSON.stringify(nodeErrors));
+      console.log(JSON.stringify(templateErrors));
+    }
   }
 };
 
@@ -134,4 +185,10 @@ const checkJWTExpiration = (locale) => {
 checkJWTExpiration("us");
 checkJWTExpiration("eu");
 
-syncAutomations(process.argv.first || "test");
+const environment = process.argv.slice(2)[0] || "test";
+console.log('Syncing automations for environment:', environment);
+
+syncAutomations(environment);
+
+
+// getAutomation(environment, 'us', '5a4f9964-7cfc-4ebc-8bc0-89e54b0a5d5a', 'v0');

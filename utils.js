@@ -1,18 +1,20 @@
 import { authorizations, domains } from "./variables.js";
 
-export const getAutomationTemplateGraphQL = (template_id) => ({
+export const getAutomationTemplateGraphQL = (template_id, version) => ({
   operationName: "GetAutomationsV2Template",
   variables: {
     templateId: template_id,
+    version: version,
   },
   query:
     "query GetAutomationsV2Template($templateId: String!, $version: String) {\n  automationsV2 {\n    template(templateId: $templateId, version: $version)\n    __typename\n  }\n}\n",
 });
 
-export const getAutomationNodesGraphQL = (template_id) => ({
+export const getAutomationNodesGraphQL = (template_id, version) => ({
   operationName: "GetAutomationsV2Nodes",
   variables: {
     templateId: template_id,
+    version: version,
   },
   query:
     "query GetAutomationsV2Nodes($templateId: String!, $version: String) {\n  automationsV2 {\n    nodes(templateId: $templateId, version: $version)\n    __typename\n  }\n}\n",
